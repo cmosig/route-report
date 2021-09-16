@@ -1,0 +1,14 @@
+osm_tag|route-report-group|type
+shop=supermarket|food-shop|node
+shop=supermarket|food-shop|way
+amenity=fuel|petrol-station|way
+amenity=fuel|petrol-station|node
+shop=gas|petrol-station|way
+shop=gas|petrol-station|node
+landuse=cemetery|water|way
+shop=kiosk|food-shop|way
+shop=kiosk|food-shop|node
+shop=convenience|food-shop|way
+shop=convenience|food-shop|node
+shop=bakery|food-shop|way
+shop=bakery|food-shop|node
