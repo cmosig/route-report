@@ -17,7 +17,10 @@ def read_metadata(country_codes):
     return return_df
 
 
-def download_and_preprocess_metadata(country_codes, redownload, reprocess, cleanup=False):
+def download_and_preprocess_metadata(country_codes,
+                                     redownload,
+                                     reprocess,
+                                     cleanup=False):
     # load index
     mapping = pd.read_csv("other_data/country_code_mapping.csv",
                           squeeze=True,
@@ -64,6 +67,8 @@ def download_and_preprocess_metadata(country_codes, redownload, reprocess, clean
                      desc="Checking country metadata",
                      leave=False):
 
+        print(f"working on {code}")
+
         fname = f"{dir_name}/{code}-metadata-unfiltered.osm.pbf"
         filter_fname = f"{dir_name}/{code}-metadata.osm.pbf"
         filter_fname_csv = f"{dir_name}/{code}-metadata.csv.gz"
@@ -77,8 +82,17 @@ def download_and_preprocess_metadata(country_codes, redownload, reprocess, clean
         # download file
         # progress bar adopted from https://stackoverflow.com/a/62113293/8832008
         # if next file not there or redownload
-        if not os.path.exists(filter_fname_csv) or redownload or (
-                not os.path.exists(filter_fname) and reprocess):
+
+        # filtered thing is always present in both versions
+        assert (not os.path.exists(filter_fname)
+                and not os.path.exists(filter_fname_csv)) or (
+                    os.path.exists(filter_fname)
+                    and os.path.exists(filter_fname_csv))
+
+        if redownload or (not os.path.exists(fname) and reprocess) or (
+                not os.path.exists(fname) and
+            (not os.path.exists(filter_fname)
+             and not os.path.exists(filter_fname_csv))):
             resp = requests.get(url, stream=True)
             total = int(resp.headers.get('content-length', 0))
             with open(fname, 'wb') as file, tqdm(desc=f"Downloading {code}",
@@ -104,7 +118,7 @@ def download_and_preprocess_metadata(country_codes, redownload, reprocess, clean
             # third, we merge both and save
             # (the remove new line part is only there so that we can use new
             # lines. the shell does not like new lines)
-            osmosis_string = f"""osmosis 
+            osmosis_string_temp = f"""osmosis 
             --read-pbf-fast country_metadata/{code}-metadata-unfiltered.osm.pbf workers=8
                 --tf accept-ways {osmosis_string}
                 --tf reject-relations 
@@ -114,10 +128,9 @@ def download_and_preprocess_metadata(country_codes, redownload, reprocess, clean
                 --tf reject-relations 
                 --tf reject-ways 
             --merge 
-            --write-pbf country_metadata/{code}-metadata.osm.pbf 
-            2> /dev/null""".replace("\n", "")
+            --write-pbf country_metadata/{code}-metadata.osm.pbf""".replace("\n", "")
             # launch osmosis process and wait until its done
-            Popen(osmosis_string, shell=True).wait()
+            Popen(osmosis_string_temp, shell=True).wait()
 
             # ------------------------------------------------------------
             # 3) Convert to CSV and get poi-groups
@@ -188,4 +201,3 @@ def download_and_preprocess_metadata(country_codes, redownload, reprocess, clean
 
             if cleanup:
                 os.remove(fname)
-                os.remove(filter_fname)
